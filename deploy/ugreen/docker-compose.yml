@@ -33,7 +33,8 @@ services:
       - ${APPDATA_ROOT}/jellyfin/cache:/cache
       - ${VIDEO_ROOT}:/media/video:ro
       - ${MUSIC_ROOT}:/media/music:ro
-    # DXP2800 Intel Quick Sync: uncomment after confirming /dev/dri exists.
+    # UGREEN DXP2800 / Intel N100 Quick Sync:
+    # Uncomment only after confirming /dev/dri exists on the NAS.
     # devices:
     #   - /dev/dri:/dev/dri
     networks: [eljeffe]
@@ -86,6 +87,7 @@ services:
     networks: [eljeffe]
 
   gluetun:
+    profiles: ["vpn"]
     image: qmcgaw/gluetun:latest
     container_name: eljeffe-gluetun
     restart: unless-stopped
@@ -116,10 +118,10 @@ services:
       - ${APPDATA_ROOT}/gluetun:/gluetun
     networks: [eljeffe]
 
-  # Optional Cloudflare Tunnel:
-  # cloudflared:
-  #   image: cloudflare/cloudflared:latest
-  #   container_name: eljeffe-cloudflared
-  #   restart: unless-stopped
-  #   command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-  #   networks: [eljeffe]
+  cloudflared:
+    profiles: ["remote"]
+    image: cloudflare/cloudflared:latest
+    container_name: eljeffe-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks: [eljeffe]
