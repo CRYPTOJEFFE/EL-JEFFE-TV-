@@ -17,6 +17,8 @@ services:
       SECRET_ENCRYPTION_KEY: ${HOMARR_SECRET_ENCRYPTION_KEY}
     volumes:
       - ${APPDATA_ROOT}/homarr:/appdata
+      # Optional: expose Docker management inside Homarr after reviewing the security tradeoff.
+      # - /var/run/docker.sock:/var/run/docker.sock
     networks: [eljeffe]
 
   jellyfin:
@@ -43,7 +45,6 @@ services:
     image: navidrome/navidrome:latest
     container_name: eljeffe-navidrome
     restart: unless-stopped
-    user: "${PUID}:${PGID}"
     ports:
       - "4533:4533"
     environment:
@@ -86,8 +87,23 @@ services:
       - ${COMICS_ROOT}:/comics
     networks: [eljeffe]
 
+  # IPTV/EPG manager without VPN. Use only licensed/provider-issued feeds.
+  # Start with: docker compose --profile iptv up -d
+  dispatcharr:
+    profiles: ["iptv"]
+    image: ghcr.io/dispatcharr/dispatcharr:latest
+    container_name: eljeffe-dispatcharr
+    restart: unless-stopped
+    ports:
+      - "9191:9191"
+    volumes:
+      - ${APPDATA_ROOT}/dispatcharr:/data
+    networks: [eljeffe]
+
+  # VPN gateway. Start only after VPN credentials are filled in .env.
+  # docker compose --profile vpn up -d
   gluetun:
-    profiles: ["vpn"]
+    profiles: ["vpn", "iptv-vpn"]
     image: qmcgaw/gluetun:latest
     container_name: eljeffe-gluetun
     restart: unless-stopped
@@ -99,6 +115,7 @@ services:
       - "8888:8888/tcp"
       - "8388:8388/tcp"
       - "8388:8388/udp"
+      - "9191:9191/tcp"
     environment:
       TZ: ${TZ}
       VPN_SERVICE_PROVIDER: ${VPN_SERVICE_PROVIDER}
@@ -118,6 +135,22 @@ services:
       - ${APPDATA_ROOT}/gluetun:/gluetun
     networks: [eljeffe]
 
+  # IPTV/EPG manager with all outbound stream traffic sharing Gluetun's network stack.
+  # Do not run dispatcharr and dispatcharr-vpn at the same time.
+  # Start with: docker compose --profile iptv-vpn up -d
+  dispatcharr-vpn:
+    profiles: ["iptv-vpn"]
+    image: ghcr.io/dispatcharr/dispatcharr:latest
+    container_name: eljeffe-dispatcharr-vpn
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    volumes:
+      - ${APPDATA_ROOT}/dispatcharr:/data
+
+  # Remote-access profile. Create a Cloudflare Tunnel and put its token in .env.
+  # docker compose --profile remote up -d
   cloudflared:
     profiles: ["remote"]
     image: cloudflare/cloudflared:latest
