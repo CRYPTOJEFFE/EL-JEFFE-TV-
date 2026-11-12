@@ -1,0 +1,16 @@
+{
+  "name": "EL JEFFE ENTERTAINMENT NAS",
+  "services": [
+    {"id":"homarr","label":"NAS Dashboard","local":"http://NAS_IP:7575","remote":"https://homarr.example.com"},
+    {"id":"jellyfin","label":"Movies & TV","local":"http://NAS_IP:8096","remote":"https://watch.example.com"},
+    {"id":"navidrome","label":"Music","local":"http://NAS_IP:4533","remote":"https://music.example.com"},
+    {"id":"audiobookshelf","label":"Audiobooks & Podcasts","local":"http://NAS_IP:13378","remote":"https://audio.example.com"},
+    {"id":"kavita","label":"E-books, Comics & Magazines","local":"http://NAS_IP:5000","remote":"https://read.example.com"}
+  ],
+  "privacy": {
+    "third_party_analytics": false,
+    "third_party_ad_networks": false,
+    "remote_access": "Cloudflare Tunnel + Access or Tailscale",
+    "vpn_gateway": "Gluetun is only for explicitly routed outbound containers."
+  }
+}
