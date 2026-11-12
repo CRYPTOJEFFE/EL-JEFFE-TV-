@@ -22,10 +22,12 @@ Core services run directly on the EL JEFFE Docker bridge:
 
 Optional profiles:
 
-- `vpn` — Gluetun outbound VPN gateway, DNS ad/tracker/malware filtering
+- `iptv` — Dispatcharr IPTV/EPG manager for licensed/provider-issued M3U, Xtream and XMLTV sources
+- `vpn` — Gluetun outbound VPN gateway and DNS ad/tracker/malware filtering
+- `iptv-vpn` — Dispatcharr sharing Gluetun's network namespace so its outbound stream traffic uses the VPN
 - `remote` — Cloudflare Tunnel for protected HTTPS access
 
-Keeping Homarr/media servers off Gluetun by default means a VPN outage will not take the dashboard or local playback offline.
+Keeping Homarr and the local media servers off Gluetun by default means a VPN outage will not take the dashboard or local playback offline.
 
 ## Fastest deployment
 
@@ -41,10 +43,12 @@ chmod +x install-ugreen.sh
 The installer:
 
 1. searches `/volume*` for the recorded video, music and ROM shares;
-2. creates persistent app-data folders;
-3. generates Homarr's 64-character encryption key;
-4. validates the Compose configuration;
-5. starts the five core services.
+2. chooses the matching UGREEN storage root for new media folders where possible;
+3. creates Audiobooks, Podcasts, Books, Magazines and Comics folders when missing;
+4. creates persistent app-data folders;
+5. generates Homarr's 64-character encryption key;
+6. validates the Compose configuration;
+7. starts the five core media/dashboard services.
 
 ## UGOS Docker Project method
 
@@ -63,12 +67,33 @@ Core local URLs:
 - Navidrome: `http://192.168.1.222:4533`
 - Audiobookshelf: `http://192.168.1.222:13378`
 - Kavita: `http://192.168.1.222:5000`
+- Dispatcharr after the IPTV profile is enabled: `http://192.168.1.222:9191`
+
+## TV / IPTV / EPG
+
+Dispatcharr is the channel-management layer.
+
+Start it normally:
+
+```sh
+docker compose --profile iptv up -d
+```
+
+Or, after filling your VPN credentials, route Dispatcharr's outbound traffic through Gluetun:
+
+```sh
+docker compose --profile iptv-vpn up -d
+```
+
+Do not run `dispatcharr` and `dispatcharr-vpn` at the same time because they share the same database and port.
+
+In Dispatcharr, add only M3U/Xtream/XMLTV sources you are authorized to use. Dispatcharr can export a cleaned M3U/XMLTV set and emulate an HDHomeRun tuner. Add that HDHomeRun endpoint to Jellyfin/Plex/Emby so your channel list and EPG become a proper TV guide rather than a collection of ad-heavy web pages.
 
 ## Gluetun
 
 Do not commit VPN credentials.
 
-Fill the VPN variables in `.env`, then start the profile:
+Fill the VPN variables in `.env`, then start Gluetun:
 
 ```sh
 docker compose --profile vpn up -d
@@ -91,8 +116,9 @@ Configure Cloudflare Tunnel public hostnames to the Docker service names:
 - `music.yourdomain.com` → `http://navidrome:4533`
 - `audio.yourdomain.com` → `http://audiobookshelf:80`
 - `read.yourdomain.com` → `http://kavita:5000`
+- `tv.yourdomain.com` → `http://dispatcharr:9191` when using the normal IPTV profile, or `http://gluetun:9191` when using the IPTV-vpn profile
 
-Protect Homarr and administrative surfaces with Cloudflare Access. Do not expose UGOS itself directly to the public Internet.
+Protect Homarr, Dispatcharr and other administrative surfaces with Cloudflare Access. Do not expose UGOS itself directly to the public Internet.
 
 The included `el-jeffe-nas-bridge.html` gives EL JEFFE ENTERTAINMENT a local/remote launcher. The included `el-jeffe-site-links.json` is the machine-readable equivalent.
 
@@ -100,13 +126,19 @@ The included `el-jeffe-nas-bridge.html` gives EL JEFFE ENTERTAINMENT a local/rem
 
 The DXP2800 uses Intel hardware suitable for Quick Sync. After confirming `/dev/dri` exists on the NAS, uncomment the Jellyfin `devices` mapping in `docker-compose.yml`, redeploy, then enable Intel QSV in Jellyfin.
 
+## Homarr
+
+Homarr works immediately as the dashboard. Add the local service URLs above as Apps/Bookmarks.
+
+The Docker socket is intentionally left commented out. Mounting `/var/run/docker.sock` gives Homarr powerful Docker-management access; enable it only if you specifically want container inventory/lifecycle controls and accept that security tradeoff.
+
 ## Content-source boundary
 
 Use:
 
 - media stored on your NAS;
 - tuners you own;
-- licensed/provider-issued M3U/XMLTV feeds;
+- licensed/provider-issued M3U/XMLTV/Xtream feeds;
 - public-domain media;
 - APIs whose terms permit the integration.
 
