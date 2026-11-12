@@ -9,7 +9,8 @@
     {"id":"jellyfin","label":"Movies & TV","local":"http://192.168.1.222:8096","remote":""},
     {"id":"navidrome","label":"Music","local":"http://192.168.1.222:4533","remote":""},
     {"id":"audiobookshelf","label":"Audiobooks & Podcasts","local":"http://192.168.1.222:13378","remote":""},
-    {"id":"kavita","label":"E-books, Comics & Magazines","local":"http://192.168.1.222:5000","remote":""}
+    {"id":"kavita","label":"E-books, Comics & Magazines","local":"http://192.168.1.222:5000","remote":""},
+    {"id":"dispatcharr","label":"TV & EPG Manager","local":"http://192.168.1.222:9191","remote":""}
   ],
   "remoteAccess": {
     "preferred": "Cloudflare Tunnel + Access for browser links; Tailscale for private device-only access.",
@@ -18,7 +19,8 @@
       "jellyfin":"",
       "navidrome":"",
       "audiobookshelf":"",
-      "kavita":""
+      "kavita":"",
+      "dispatcharr":""
     }
   },
   "privacy": {
