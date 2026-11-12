@@ -1,0 +1,31 @@
+{
+  "name": "EL JEFFE ENTERTAINMENT NAS",
+  "nas": {
+    "name": "ELJEFFETV",
+    "localIp": "192.168.1.222"
+  },
+  "services": [
+    {"id":"homarr","label":"NAS Dashboard","local":"http://192.168.1.222:7575","remote":""},
+    {"id":"jellyfin","label":"Movies & TV","local":"http://192.168.1.222:8096","remote":""},
+    {"id":"navidrome","label":"Music","local":"http://192.168.1.222:4533","remote":""},
+    {"id":"audiobookshelf","label":"Audiobooks & Podcasts","local":"http://192.168.1.222:13378","remote":""},
+    {"id":"kavita","label":"E-books, Comics & Magazines","local":"http://192.168.1.222:5000","remote":""},
+    {"id":"dispatcharr","label":"TV & EPG Manager","local":"http://192.168.1.222:9191","remote":""}
+  ],
+  "remoteAccess": {
+    "preferred": "Cloudflare Tunnel + Access for browser links; Tailscale for private device-only access.",
+    "cloudflareHostnames": {
+      "homarr":"",
+      "jellyfin":"",
+      "navidrome":"",
+      "audiobookshelf":"",
+      "kavita":"",
+      "dispatcharr":""
+    }
+  },
+  "privacy": {
+    "thirdPartyAnalytics": false,
+    "thirdPartyAdNetworks": false,
+    "gluetun": "Use only as an explicit outbound VPN gateway for selected containers."
+  }
+}

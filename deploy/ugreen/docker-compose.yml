@@ -1,0 +1,160 @@
+name: el-jeffe-entertainment
+
+networks:
+  eljeffe:
+    name: eljeffe
+    driver: bridge
+
+services:
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: eljeffe-homarr
+    restart: unless-stopped
+    ports:
+      - "7575:7575"
+    environment:
+      TZ: ${TZ}
+      SECRET_ENCRYPTION_KEY: ${HOMARR_SECRET_ENCRYPTION_KEY}
+    volumes:
+      - ${APPDATA_ROOT}/homarr:/appdata
+      # Optional: expose Docker management inside Homarr after reviewing the security tradeoff.
+      # - /var/run/docker.sock:/var/run/docker.sock
+    networks: [eljeffe]
+
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: eljeffe-jellyfin
+    restart: unless-stopped
+    ports:
+      - "8096:8096/tcp"
+      - "7359:7359/udp"
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${APPDATA_ROOT}/jellyfin/config:/config
+      - ${APPDATA_ROOT}/jellyfin/cache:/cache
+      - ${VIDEO_ROOT}:/media/video:ro
+      - ${MUSIC_ROOT}:/media/music:ro
+    # UGREEN DXP2800 / Intel N100 Quick Sync:
+    # Uncomment only after confirming /dev/dri exists on the NAS.
+    # devices:
+    #   - /dev/dri:/dev/dri
+    networks: [eljeffe]
+
+  navidrome:
+    image: navidrome/navidrome:latest
+    container_name: eljeffe-navidrome
+    restart: unless-stopped
+    ports:
+      - "4533:4533"
+    environment:
+      ND_LOGLEVEL: info
+      ND_SCANSCHEDULE: 1h
+      ND_SESSIONTIMEOUT: 24h
+      TZ: ${TZ}
+    volumes:
+      - ${APPDATA_ROOT}/navidrome:/data
+      - ${MUSIC_ROOT}:/music:ro
+    networks: [eljeffe]
+
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: eljeffe-audiobookshelf
+    restart: unless-stopped
+    ports:
+      - "13378:80"
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${APPDATA_ROOT}/audiobookshelf/config:/config
+      - ${APPDATA_ROOT}/audiobookshelf/metadata:/metadata
+      - ${AUDIOBOOKS_ROOT}:/audiobooks
+      - ${PODCASTS_ROOT}:/podcasts
+    networks: [eljeffe]
+
+  kavita:
+    image: jvmilazz0/kavita:latest
+    container_name: eljeffe-kavita
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${APPDATA_ROOT}/kavita:/kavita/config
+      - ${BOOKS_ROOT}:/books
+      - ${MAGAZINES_ROOT}:/magazines
+      - ${COMICS_ROOT}:/comics
+    networks: [eljeffe]
+
+  # IPTV/EPG manager without VPN. Use only licensed/provider-issued feeds.
+  # Start with: docker compose --profile iptv up -d
+  dispatcharr:
+    profiles: ["iptv"]
+    image: ghcr.io/dispatcharr/dispatcharr:latest
+    container_name: eljeffe-dispatcharr
+    restart: unless-stopped
+    ports:
+      - "9191:9191"
+    volumes:
+      - ${APPDATA_ROOT}/dispatcharr:/data
+    networks: [eljeffe]
+
+  # VPN gateway. Start only after VPN credentials are filled in .env.
+  # docker compose --profile vpn up -d
+  gluetun:
+    profiles: ["vpn", "iptv-vpn"]
+    image: qmcgaw/gluetun:latest
+    container_name: eljeffe-gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "8888:8888/tcp"
+      - "8388:8388/tcp"
+      - "8388:8388/udp"
+      - "9191:9191/tcp"
+    environment:
+      TZ: ${TZ}
+      VPN_SERVICE_PROVIDER: ${VPN_SERVICE_PROVIDER}
+      VPN_TYPE: ${VPN_TYPE}
+      OPENVPN_USER: ${OPENVPN_USER}
+      OPENVPN_PASSWORD: ${OPENVPN_PASSWORD}
+      WIREGUARD_PRIVATE_KEY: ${WIREGUARD_PRIVATE_KEY}
+      WIREGUARD_ADDRESSES: ${WIREGUARD_ADDRESSES}
+      SERVER_COUNTRIES: ${VPN_SERVER_COUNTRIES}
+      BLOCK_MALICIOUS: "on"
+      BLOCK_SURVEILLANCE: "on"
+      BLOCK_ADS: "on"
+      DNS_UPSTREAM_RESOLVERS: cloudflare,quad9
+      DNS_UPDATE_PERIOD: 24h
+      FIREWALL_OUTBOUND_SUBNETS: ${LAN_SUBNET}
+    volumes:
+      - ${APPDATA_ROOT}/gluetun:/gluetun
+    networks: [eljeffe]
+
+  # IPTV/EPG manager with all outbound stream traffic sharing Gluetun's network stack.
+  # Do not run dispatcharr and dispatcharr-vpn at the same time.
+  # Start with: docker compose --profile iptv-vpn up -d
+  dispatcharr-vpn:
+    profiles: ["iptv-vpn"]
+    image: ghcr.io/dispatcharr/dispatcharr:latest
+    container_name: eljeffe-dispatcharr-vpn
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    volumes:
+      - ${APPDATA_ROOT}/dispatcharr:/data
+
+  # Remote-access profile. Create a Cloudflare Tunnel and put its token in .env.
+  # docker compose --profile remote up -d
+  cloudflared:
+    profiles: ["remote"]
+    image: cloudflare/cloudflared:latest
+    container_name: eljeffe-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks: [eljeffe]
