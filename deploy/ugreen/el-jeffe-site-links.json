@@ -1,16 +1,29 @@
 {
   "name": "EL JEFFE ENTERTAINMENT NAS",
+  "nas": {
+    "name": "ELJEFFETV",
+    "localIp": "192.168.1.222"
+  },
   "services": [
-    {"id":"homarr","label":"NAS Dashboard","local":"http://NAS_IP:7575","remote":"https://homarr.example.com"},
-    {"id":"jellyfin","label":"Movies & TV","local":"http://NAS_IP:8096","remote":"https://watch.example.com"},
-    {"id":"navidrome","label":"Music","local":"http://NAS_IP:4533","remote":"https://music.example.com"},
-    {"id":"audiobookshelf","label":"Audiobooks & Podcasts","local":"http://NAS_IP:13378","remote":"https://audio.example.com"},
-    {"id":"kavita","label":"E-books, Comics & Magazines","local":"http://NAS_IP:5000","remote":"https://read.example.com"}
+    {"id":"homarr","label":"NAS Dashboard","local":"http://192.168.1.222:7575","remote":""},
+    {"id":"jellyfin","label":"Movies & TV","local":"http://192.168.1.222:8096","remote":""},
+    {"id":"navidrome","label":"Music","local":"http://192.168.1.222:4533","remote":""},
+    {"id":"audiobookshelf","label":"Audiobooks & Podcasts","local":"http://192.168.1.222:13378","remote":""},
+    {"id":"kavita","label":"E-books, Comics & Magazines","local":"http://192.168.1.222:5000","remote":""}
   ],
+  "remoteAccess": {
+    "preferred": "Cloudflare Tunnel + Access for browser links; Tailscale for private device-only access.",
+    "cloudflareHostnames": {
+      "homarr":"",
+      "jellyfin":"",
+      "navidrome":"",
+      "audiobookshelf":"",
+      "kavita":""
+    }
+  },
   "privacy": {
-    "third_party_analytics": false,
-    "third_party_ad_networks": false,
-    "remote_access": "Cloudflare Tunnel + Access or Tailscale",
-    "vpn_gateway": "Gluetun is only for explicitly routed outbound containers."
+    "thirdPartyAnalytics": false,
+    "thirdPartyAdNetworks": false,
+    "gluetun": "Use only as an explicit outbound VPN gateway for selected containers."
   }
 }
